@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class HLSDownload(BaseModel):
     uuid: str
     url: str
-    filename: str = 'mv.m3u8'
+    pic_url: str
 
 
 class HLSConvert(HLSDownload):
