@@ -19,7 +19,7 @@ class HLSService:
 
     async def video_download_to_hls(self, video: HLSConvert):
         hls_dir = os.path.join(self.hls_save, video.uuid)
-        os.makedirs(os.path.dirname(hls_dir), exist_ok=True)
+        os.makedirs(hls_dir, exist_ok=True)
 
         video_dir = os.path.join(self.video_save, video.uuid)
         os.makedirs(video_dir, exist_ok=True)
