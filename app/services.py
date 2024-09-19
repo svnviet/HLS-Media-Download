@@ -6,7 +6,7 @@ import requests
 
 from app.dtos import HLSConvert, HLSDownload
 
-# current_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+# current_path = os.path.dirname(os.path.abspath(__file__))
 
 
 class HLSService:
@@ -35,18 +35,23 @@ class HLSService:
             raise EOFError
 
     async def hls_content_download(self, hls: HLSDownload) -> None:
-        response = requests.get(hls.url, stream=True)
-        response.raise_for_status()
+        hls_dir = os.path.join(self.hls_save, hls.uuid)
+        os.makedirs(hls_dir, exist_ok=True)
 
-        m3u8_content = response.text.encode('utf-8')
-        lines = m3u8_content.splitlines()
+        video_dir = os.path.join(self.video_save, hls.uuid)
+        os.makedirs(video_dir, exist_ok=True)
+
+        video_path = await self._video_download_by_m3u8_url(hls, video_dir)
+
         save_dir = os.path.join(self.hls_save, hls.uuid)
-        base_url = hls.url.rsplit("/", 1)[0]
         os.makedirs(save_dir, exist_ok=True)
-        await self._picture_download_by_url(url=hls.pic_url, save_path=save_dir)
+        image_path = os.path.join(save_dir, "{}.jpg".format(hls.uuid))
+        await self._picture_download_by_url(url=hls.pic_url, save_path=image_path)
 
-        for line in lines:
-            await self._segment_part_download(line_content=line, save_dir=save_dir, base_url=base_url)
+        hls_path = os.path.join(hls_dir, hls.uuid + '.m3u8')
+        is_converted = await self._video_to_hls(input_video_path=video_path, output_hls_path=hls_path)
+        if not is_converted:
+            raise EOFError
 
     async def _video_download_by_url(self, video: HLSConvert, video_dir: str) -> str:
         video_path = os.path.join(video_dir, video.uuid + '.mp4')
@@ -58,6 +63,20 @@ class HLSService:
                 file.write(chunk)
 
         return video_path
+
+    async def _video_download_by_m3u8_url(self, hls: HLSDownload, video_dir):
+        video_path = os.path.join(video_dir, hls.uuid + '.mp4')
+        command = [
+            "ffmpeg",
+            "-i", f"{hls.url}",
+            "-c", "copy",  # Copy the video stream
+            f"{video_path}",
+        ]
+        try:
+            subprocess.run(command, check=True)
+            return video_path
+        except subprocess.CalledProcessError as e:
+            return False
 
     @staticmethod
     async def _picture_download_by_url(url: str, save_path: str) -> None:
