@@ -73,7 +73,9 @@ class HLSService:
             f"{video_path}",
         ]
         try:
+            print(f"Downloading {hls.url}")
             subprocess.run(command, check=True)
+            print(f"Finished downloading save to {video_path}")
             return video_path
         except subprocess.CalledProcessError as e:
             return False
@@ -112,7 +114,9 @@ class HLSService:
             "-f", "hls", f"{output_hls_path}",
         ]
         try:
+            print(f"Convert to hls {input_video_path}")
             subprocess.run(command, check=True)
+            print(f"Save hls to {output_hls_path}")
             return True
         except subprocess.CalledProcessError as e:
             return False
